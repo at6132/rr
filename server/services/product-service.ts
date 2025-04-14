@@ -15,13 +15,37 @@ class ProductService {
         throw new Error("Could not detect product information");
       }
       
-      // Fetch data from different sources in parallel
-      const [videos, redditPosts, blogReviews, aggregatedScore] = await Promise.all([
-        youtubeService.getProductReviews(product.title),
-        redditService.getProductDiscussions(product.title),
-        searchService.getExpertReviews(product.title),
-        ratingAggregatorService.getAggregatedScore(product.title, product.url)
-      ]);
+      // Fetch data from different sources in parallel with error handling
+      let videos = [];
+      let redditPosts = [];
+      let blogReviews = [];
+      let aggregatedScore = null;
+      
+      try {
+        // Use allSettled to prevent one API failure from causing the entire analysis to fail
+        const results = await Promise.allSettled([
+          youtubeService.getProductReviews(product.title),
+          redditService.getProductDiscussions(product.title),
+          searchService.getExpertReviews(product.title),
+          ratingAggregatorService.getAggregatedScore(product.title, product.url)
+        ]);
+        
+        // Process each result individually
+        if (results[0].status === 'fulfilled') videos = results[0].value;
+        if (results[1].status === 'fulfilled') redditPosts = results[1].value;
+        if (results[2].status === 'fulfilled') blogReviews = results[2].value;
+        if (results[3].status === 'fulfilled') aggregatedScore = results[3].value;
+        
+        // Log any errors
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const sources = ['YouTube', 'Reddit', 'Blog Search', 'Aggregated Score'];
+            console.error(`Error fetching data from ${sources[index]}:`, result.reason);
+          }
+        });
+      } catch (error) {
+        console.error("Error in parallel data fetching:", error);
+      }
       
       // Gather review texts for AI processing
       const reviewTexts = [
