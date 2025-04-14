@@ -1,112 +1,91 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { Summary } from "../types";
+import { Star, StarHalf } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 interface AggregatedScoreProps {
   summary: Summary;
 }
 
 const AggregatedScore: React.FC<AggregatedScoreProps> = ({ summary }) => {
-  const positiveBarRef = useRef<HTMLDivElement>(null);
-  const neutralBarRef = useRef<HTMLDivElement>(null);
-  const negativeBarRef = useRef<HTMLDivElement>(null);
-  const circlePathRef = useRef<SVGPathElement>(null);
+  // Calculate overall score (0-5) from sentiment percentages
+  const overallScore = (
+    summary.positivePercentage * 5 / 100 + 
+    summary.neutralPercentage * 3 / 100 + 
+    summary.negativePercentage * 1 / 100
+  ).toFixed(1);
 
-  useEffect(() => {
-    // Animate progress bars
-    if (positiveBarRef.current) {
-      positiveBarRef.current.style.width = `${summary.positivePercentage}%`;
-    }
-    if (neutralBarRef.current) {
-      neutralBarRef.current.style.width = `${summary.neutralPercentage}%`;
-    }
-    if (negativeBarRef.current) {
-      negativeBarRef.current.style.width = `${summary.negativePercentage}%`;
-    }
+  // Function to render stars based on rating
+  const renderStars = (rating: number) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
     
-    // Animate circle progress
-    if (circlePathRef.current) {
-      const circumference = 2 * Math.PI * 15.9155;
-      const offset = circumference - (summary.positivePercentage / 100) * circumference;
-      circlePathRef.current.style.strokeDashoffset = offset.toString();
-    }
-  }, [summary]);
+    return (
+      <div className="flex items-center">
+        {Array(fullStars).fill(0).map((_, i) => (
+          <Star key={`full-${i}`} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+        ))}
+        
+        {hasHalfStar && <StarHalf className="h-5 w-5 fill-yellow-400 text-yellow-400" />}
+        
+        {Array(5 - fullStars - (hasHalfStar ? 1 : 0)).fill(0).map((_, i) => (
+          <Star key={`empty-${i}`} className="h-5 w-5 text-gray-300" />
+        ))}
+        
+        <span className="ml-2 font-semibold">{overallScore}</span>
+      </div>
+    );
+  };
 
   return (
-    <div className="p-4 border-b border-gray-700">
-      <h3 className="font-semibold mb-2 text-base">Overall Impression</h3>
-      <div className="flex items-center mb-3">
-        <div className="w-24 h-24 relative mr-4">
-          <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
-            <path
-              className="stroke-current text-gray-700"
-              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-              fill="none"
-              strokeWidth="3"
-              strokeDasharray="100, 100"
-            />
-            <path
-              ref={circlePathRef}
-              className="stroke-current text-sunset-gold transition-all duration-1000 ease-out"
-              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-              fill="none"
-              strokeWidth="3"
-              strokeDasharray="100, 100"
-              strokeDashoffset="100"
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center flex-col">
-            <span className="text-2xl font-bold text-sunset-gold">
-              {summary.positivePercentage}%
+    <Card className="mb-4">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg flex justify-between items-center">
+          <span>Aggregated User Score</span>
+          <Badge className="ml-auto" variant={
+            parseFloat(overallScore) >= 4 ? "default" : 
+            parseFloat(overallScore) >= 3 ? "outline" : "destructive"
+          }>
+            {parseFloat(overallScore) >= 4 ? "Highly Rated" : 
+             parseFloat(overallScore) >= 3 ? "Mixed Reviews" : "Low Rated"}
+          </Badge>
+        </CardTitle>
+        <CardDescription>
+          Based on {summary.reviewCount} reviews across multiple platforms
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent>
+        <div className="mt-2">
+          {renderStars(parseFloat(overallScore))}
+        </div>
+        
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-green-600">
+              Positive ({summary.positivePercentage}%)
             </span>
-            <span className="text-xs text-secondary-text">Positive</span>
+            <Progress value={summary.positivePercentage} className="w-3/4 h-2 bg-gray-200" />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-amber-600">
+              Neutral ({summary.neutralPercentage}%)
+            </span>
+            <Progress value={summary.neutralPercentage} className="w-3/4 h-2 bg-gray-200" />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-red-600">
+              Negative ({summary.negativePercentage}%)
+            </span>
+            <Progress value={summary.negativePercentage} className="w-3/4 h-2 bg-gray-200" />
           </div>
         </div>
-        <div className="flex-1">
-          <p className="text-sm mb-2">
-            Based on{" "}
-            <span className="font-semibold text-teal-glow">
-              {summary.reviewCount} reviews
-            </span>{" "}
-            analyzed across multiple sources:
-          </p>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span>Positive</span>
-              <div className="w-40 h-2 bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  ref={positiveBarRef}
-                  className="h-full bg-teal-glow transition-all duration-1000 ease-out"
-                  style={{ width: "0%" }}
-                ></div>
-              </div>
-              <span className="text-teal-glow">{summary.positivePercentage}%</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span>Neutral</span>
-              <div className="w-40 h-2 bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  ref={neutralBarRef}
-                  className="h-full bg-secondary-text transition-all duration-1000 ease-out"
-                  style={{ width: "0%" }}
-                ></div>
-              </div>
-              <span>{summary.neutralPercentage}%</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span>Negative</span>
-              <div className="w-40 h-2 bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  ref={negativeBarRef}
-                  className="h-full bg-error-red transition-all duration-1000 ease-out"
-                  style={{ width: "0%" }}
-                ></div>
-              </div>
-              <span className="text-error-red">{summary.negativePercentage}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
