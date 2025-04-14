@@ -2,13 +2,16 @@
  * Service for generating affiliate links for various e-commerce platforms
  */
 class AffiliateService {
-  // Your affiliate IDs for different platforms
+  /**
+   * Store affiliate IDs for different platforms
+   * These would normally be stored in environment variables
+   */
   private affiliateIds = {
-    amazon: process.env.AMAZON_AFFILIATE_ID || 'reviewradar-20',
-    bestbuy: process.env.BESTBUY_AFFILIATE_ID || 'reviewradar',
-    walmart: process.env.WALMART_AFFILIATE_ID || 'reviewradar',
-    target: process.env.TARGET_AFFILIATE_ID || 'reviewradar',
-    newegg: process.env.NEWEGG_AFFILIATE_ID || 'reviewradar'
+    amazon: 'reviewradar-20', // Amazon Associates ID
+    walmart: '12345', // Walmart Affiliate ID
+    bestbuy: 'abcdef', // Best Buy Affiliate ID
+    target: '54321', // Target Affiliate ID
+    ebay: 'reviewradar', // eBay Partner Network ID
   };
 
   /**
@@ -20,62 +23,51 @@ class AffiliateService {
     try {
       const url = new URL(productUrl);
       const hostname = url.hostname.toLowerCase();
-
+      
       // Amazon affiliate links
       if (hostname.includes('amazon')) {
-        // Remove existing tag if present
-        const searchParams = new URLSearchParams(url.search);
-        searchParams.delete('tag');
+        // Clean the URL to remove existing parameters
+        const cleanUrl = `${url.origin}${url.pathname}`;
         
-        // Add our affiliate tag
-        searchParams.append('tag', this.affiliateIds.amazon);
-        
-        // Rebuild the URL
-        url.search = searchParams.toString();
+        // Add affiliate tag
+        return `${cleanUrl}?tag=${this.affiliateIds.amazon}`;
+      }
+      
+      // Walmart affiliate links
+      else if (hostname.includes('walmart')) {
+        // Add or update affil parameter
+        url.searchParams.set('affil', this.affiliateIds.walmart);
         return url.toString();
       }
       
       // Best Buy affiliate links
       else if (hostname.includes('bestbuy')) {
-        const searchParams = new URLSearchParams(url.search);
-        searchParams.delete('irclickid');
-        searchParams.append('irclickid', this.affiliateIds.bestbuy);
-        url.search = searchParams.toString();
-        return url.toString();
-      }
-      
-      // Walmart affiliate links
-      else if (hostname.includes('walmart')) {
-        const searchParams = new URLSearchParams(url.search);
-        searchParams.delete('athrefid');
-        searchParams.append('athrefid', this.affiliateIds.walmart);
-        url.search = searchParams.toString();
+        // Add or update ref parameter
+        url.searchParams.set('ref', this.affiliateIds.bestbuy);
         return url.toString();
       }
       
       // Target affiliate links
       else if (hostname.includes('target')) {
-        const searchParams = new URLSearchParams(url.search);
-        searchParams.delete('affiliate_id');
-        searchParams.append('affiliate_id', this.affiliateIds.target);
-        url.search = searchParams.toString();
+        // Add or update afid parameter
+        url.searchParams.set('afid', this.affiliateIds.target);
         return url.toString();
       }
       
-      // Newegg affiliate links
-      else if (hostname.includes('newegg')) {
-        const searchParams = new URLSearchParams(url.search);
-        searchParams.delete('affid');
-        searchParams.append('affid', this.affiliateIds.newegg);
-        url.search = searchParams.toString();
+      // eBay affiliate links
+      else if (hostname.includes('ebay')) {
+        // Add or update mpre parameter
+        url.searchParams.set('mpre', productUrl);
+        url.searchParams.set('mplat', this.affiliateIds.ebay);
         return url.toString();
       }
       
-      // If not a supported platform, return the original URL
+      // For all other websites, return the original URL
       return productUrl;
     } catch (error) {
       console.error('Error generating affiliate link:', error);
-      return productUrl; // Return original URL if there's an error
+      // If we encounter any error, return the original URL
+      return productUrl;
     }
   }
 }
