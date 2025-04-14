@@ -1,0 +1,277 @@
+🧠 Project Overview: ReviewRadar – AI Product Review Assistant
+🔍 Core Purpose
+ReviewRadar is a Chrome extension that enhances online shopping by instantly detecting products on any webpage and delivering a full aggregated overview of public opinion—across reviews, videos, and discussions—plus an AI-powered Q&A assistant.
+
+The goal: turn product pages into mini research hubs so users make smarter purchase decisions without ever leaving the page.
+
+⚙️ How It Works (User Flow)
+User lands on a product page (e.g., Amazon, Walmart, Newegg, Shopify, etc.)
+
+The extension detects the product using:
+
+Product title from DOM (<h1>, meta tags, etc.)
+
+URL patterns (Amazon ASIN, Shopify paths, etc.)
+
+Structured data (schema.org)
+
+Optional user highlight + right-click “Search with ReviewRadar”
+
+The backend scrapes & queries multiple data sources:
+
+YouTube API – top reviews, unboxings, comparisons
+
+Reddit API – discussions about the product
+
+Google/Bing Custom Search API – blog reviews, expert reviews (Wirecutter, Rtings, Tom’s Hardware, etc.)
+
+Retailer APIs / DOM Scrape – user reviews from Amazon, BestBuy, etc.
+
+AI analyzes and summarizes the reviews:
+
+Sentiment analysis (positive, neutral, negative)
+
+Pros, cons, key points
+
+Confidence score
+
+Results are shown in a clean, fast sidebar or popup UI, with optional full-page overlay mode
+
+🖥️ FRONTEND (React + TypeScript – Chrome Extension UI)
+Main Components
+🧊 Sidebar / Popup UI (Triggered automatically or manually)
+Top Section
+
+🛍 Product title (pulled from page)
+
+🔗 Page source (Amazon, Target, etc.)
+
+🎯 Aggregated User Score (visualized as a pie or bar):
+
+Based on scraped reviews (stars, upvotes, mentions)
+
+Shown as % breakdown + confidence meter
+
+Example: ⭐ 89% Positive (1,230 reviews analyzed)
+
+🧠 AI Summary Box
+
+“Here’s what people are saying...”
+
+Bullet points: 3 pros, 3 cons
+
+"Best For" tags (e.g., “Best for travelers,” “Budget pick”)
+
+📺 Top Video Reviews
+
+Cards with:
+
+Thumbnail
+
+Title
+
+View count
+
+CTA: “Watch Now”
+
+Filter: “In-depth”, “Short”, “Comparisons”
+
+🧵 Reddit Highlights
+
+Collapsible cards with:
+
+Thread title
+
+Comment summary (AI-generated)
+
+Date, subreddit, upvotes
+
+CTA: “View Thread”
+
+🌐 Blog Reviews
+
+Source logo (Wirecutter, CNET, etc.)
+
+Rating (if applicable)
+
+AI-blurb: “Reviewer says X”
+
+CTA: “Read More”
+
+💬 Ask AI About This Product
+
+Chatbox powered by OpenAI or Claude
+
+Prompt examples:
+
+“How does this compare to X?”
+
+“Is this good for gaming?”
+
+“Why do some users hate it?”
+
+Keeps context of the current product and gives custom answers
+
+🔄 Refresh / Re-scan Button
+
+Re-triggers detection & search if page updates
+
+🌙 Light/Dark Mode Toggle
+
+🧑‍🎨 DESIGN SYSTEM
+✨ Visual Style
+Brand Color Palette:
+
+Deep Indigo #2A2E45 for backgrounds
+
+Teal Glow #00F0B5 for accents and highlights
+
+Soft White #FAFAFA for text
+
+Sunset Gold #FFB400 for ratings and call-to-action
+
+Error Red #FF5F5F for negative sentiment
+
+Fonts:
+
+Headings: Satoshi or Avenir
+
+Body: Inter or SF Pro Text
+
+Component Style:
+
+Rounded cards (12px radius)
+
+Soft drop shadows
+
+Hover states for all interactive elements
+
+Minimalistic icons (Lucide or Phosphor icons)
+
+Layouts
+Responsive design inside popup (400x600) and sidebar (100% height, 400px width)
+
+Key layout rules:
+
+One scroll column
+
+Tabs/sections anchored with sticky headers
+
+"Ask AI" chat fixed at the bottom
+
+🧪 BACKEND (Node.js + Python)
+Product Detection
+Frontend sends DOM metadata, page title, and known patterns
+
+Backend runs NLP cleanup (strip filler words, normalize variants)
+
+Scraping & API Integrations
+Retail Review Sites:
+
+Amazon (unofficial DOM or proxy API)
+
+BestBuy, Walmart
+
+Shopify using meta tags / OpenGraph
+
+YouTube:
+
+YouTube Data API
+
+Query using product name + keywords like "review", "vs", "unboxing"
+
+Rank by views + recency
+
+Reddit:
+
+Reddit API (or crawl old.reddit.com)
+
+Use product name, brand, and keywords in search
+
+Pull top posts and top comments
+
+Blogs & Google:
+
+Google Search API or Bing Custom Search
+
+Target: Wirecutter, TechRadar, TheVerge, RTINGS, etc.
+
+Parse rating if present (e.g., 4/5, 9.3/10)
+
+AI Summarization Engine:
+
+GPT-4 or Claude (via API call)
+
+Uses:
+
+Review parsing + sentiment breakdown
+
+Summary generation
+
+Chat with memory of the product
+
+Data Caching (Optional)
+Frequently viewed products cached in Redis or Firebase
+
+Store:
+
+Last fetch timestamp
+
+Aggregated score
+
+Summary
+
+Top content
+
+🧠 Aggregated User Score Logic
+Normalize all ratings (e.g., Amazon stars, Reddit upvotes, blog scores)
+
+Assign weight to each:
+
+60%: Verified User Reviews
+
+25%: Blog Scores
+
+15%: Reddit/YouTube Sentiment
+
+Calculate overall rating (0–100%) + label:
+
+Excellent (90–100%)
+
+Very Good (75–89%)
+
+Mixed (50–74%)
+
+Avoid (Below 50%)
+
+🧑‍💻 AI Chat System (Product Q&A)
+GPT-4-turbo endpoint
+
+Sends:
+
+Full product name + specs
+
+Aggregated pros/cons
+
+Key review data
+
+User can ask anything:
+
+“Can I use this for podcasting?”
+
+“Better than Bose 700?”
+
+Stores chat context per product session (can reset)
+
+✅ MVP Scope
+To build v1:
+
+ DOM scraper + product identifier
+
+ YouTube + Reddit integration
+
+ AI summary for 3 sources
+
+ Sidebar with score, top video, summary
+
+ Ask AI box with predefined prompt templates
