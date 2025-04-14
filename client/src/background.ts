@@ -7,6 +7,11 @@ interface DetectedProductMessage {
     source: string;
     imageUrl?: string;
   };
+  debug?: {
+    method: string;
+    selector?: string;
+    details?: string;
+  };
 }
 
 interface DetectProductMessage {
