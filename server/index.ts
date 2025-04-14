@@ -62,8 +62,9 @@ app.use((req, res, next) => {
   const port = 5000;
   server.listen({
     port,
-    host: "localhost", // Changed from "0.0.0.0" to "localhost" for Windows compatibility
+    host: "127.0.0.1", // Using explicit IPv4 address for Windows compatibility
     reusePort: true,
+    ipv6Only: false, // Disable IPv6
   }, () => {
     log(`serving on port ${port}`);
   });
