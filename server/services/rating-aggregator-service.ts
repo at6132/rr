@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { AggregatedScore, PlatformRating } from '@shared/schema';
+import { openaiService } from './openai-service';
 
 // Defines the trustworthiness weight of each platform (1-10)
 const PLATFORM_WEIGHTS: Record<string, number> = {
@@ -621,7 +622,5 @@ class RatingAggregatorService {
     }
   }
 }
-
-export const ratingAggregatorService = new RatingAggregatorService();
 
 export const ratingAggregatorService = new RatingAggregatorService();

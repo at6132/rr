@@ -6,6 +6,7 @@ import { youtubeService } from "./services/youtube-service";
 import { redditService } from "./services/reddit-service";
 import { searchService } from "./services/search-service";
 import { productService } from "./services/product-service";
+import { affiliateService } from "./services/affiliate-service";
 import { z } from "zod";
 import { productAnalysisSchema } from "@shared/schema";
 
@@ -161,6 +162,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error fetching blog reviews:', error);
       return res.status(500).json({ 
         message: 'Failed to fetch blog reviews',
+        error: (error as Error).message
+      });
+    }
+  });
+
+  // Generate affiliate link endpoint
+  app.post('/api/affiliate/link', (req, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ 
+          message: 'Valid URL is required' 
+        });
+      }
+      
+      const affiliateLink = affiliateService.generateAffiliateLink(url);
+      return res.json({ affiliateLink });
+    } catch (error) {
+      console.error('Error generating affiliate link:', error);
+      return res.status(500).json({ 
+        message: 'Failed to generate affiliate link',
         error: (error as Error).message
       });
     }

@@ -30,6 +30,13 @@ interface BlogReviewResult {
   rating: number | null; // Rating might not be available in all blog reviews
 }
 
+interface PlatformRatingResult {
+  platform: string;
+  rating: number;
+  reviewCount: number;
+  url: string;
+}
+
 class OpenAIService {
   /**
    * Fetches real blog reviews for a product using OpenAI's websearch capability
