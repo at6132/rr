@@ -29,13 +29,13 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['http://localhost:5000/api/analyze', productUrl],
+    queryKey: ['/api/analyze', productUrl],
     queryFn: async () => {
       if (!detectedProduct) {
         throw new Error('No product detected');
       }
       
-      const response = await fetch('http://localhost:5000/api/analyze', {
+      const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
