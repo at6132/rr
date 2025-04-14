@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "AI-powered product review assistant",
   "action": {
-    "default_popup": "index.html",
+    "default_popup": "index.html#/",
     "default_icon": {
       "16": "/assets/trans.icononly.png",
       "48": "/assets/trans.icononly.png",

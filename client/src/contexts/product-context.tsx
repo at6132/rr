@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { ProductAnalysis, DetectedProduct } from '../types';
 import { useQuery } from '@tanstack/react-query';
+import config from '../config';
+import { apiRequest } from '../lib/queryClient';
 
 interface ProductContextType {
   productUrl: string | null;
@@ -23,6 +25,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
   const [productUrl, setProductUrl] = useState<string | null>(null);
   const [detectedProduct, setDetectedProduct] = useState<DetectedProduct | null>(null);
 
+  // Use the imported config and apiRequest from the top
+  
   const {
     data: productAnalysis,
     isLoading,
@@ -35,22 +39,17 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         throw new Error('No product detected');
       }
       
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Use apiRequest to ensure the proper API URL is used from config
+      const response = await apiRequest(
+        'POST',
+        '/api/analyze',
+        {
           url: productUrl,
           productInfo: detectedProduct,
-        }),
-      });
+        }
+      );
       
-      if (!response.ok) {
-        throw new Error('Failed to analyze product');
-      }
-      
-      return response.json();
+      return await response.json();
     },
     enabled: !!productUrl && !!detectedProduct,
     gcTime: 1000 * 60 * 10, // Cache for 10 minutes
