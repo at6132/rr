@@ -7,12 +7,17 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Import configuration
+import config from '../config';
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  // Make sure URL is absolute with our API base
+  const fullUrl = url.startsWith('http') ? url : `${config.apiBaseUrl}${url}`;
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
