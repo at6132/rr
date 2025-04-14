@@ -35,9 +35,24 @@ ReviewRadar is a Chrome extension that provides comprehensive product review ana
    ```
 
 3. Start the development server:
+   
+   **For Mac/Linux:**
    ```
    npm run dev
    ```
+   
+   **For Windows:**
+   Use the provided batch file which handles environment variables correctly:
+   ```
+   start-server.bat
+   ```
+   
+   Alternatively, for running on a different port (e.g., 3000):
+   ```
+   start-server-alt-port.bat
+   ```
+   
+   These batch files include automatic dependency checks and proper environment variable handling for Windows systems.
 
 ## Building the Extension
 
