@@ -25,23 +25,25 @@ class RatingAggregatorService {
       }
       
       // Calculate overall rating (normalized to 5 stars)
-      const overallRating = totalReviewCount > 0
+      const overallScore = totalReviewCount > 0
         ? (totalWeightedRating / totalReviewCount)
         : 0;
       
       return {
-        overallRating,
-        reviewCount: totalReviewCount,
-        platformRatings: this.getUniquePlatformRatings(platformRatings),
+        overallScore,
+        totalReviewCount,
+        confidenceScore: 0.85, // Default confidence score
+        platformBreakdown: this.getUniquePlatformRatings(platformRatings),
       };
     } catch (error) {
       console.error('Error aggregating ratings:', error);
       
       // Return a default object if we can't get ratings
       return {
-        overallRating: 0,
-        reviewCount: 0,
-        platformRatings: [],
+        overallScore: 0,
+        totalReviewCount: 0,
+        confidenceScore: 0,
+        platformBreakdown: [],
       };
     }
   }
@@ -85,7 +87,9 @@ class RatingAggregatorService {
           platform: sourcePlatform,
           rating: extractedRating.rating,
           reviewCount: extractedRating.reviewCount || 0,
-          url: productUrl
+          url: productUrl,
+          weight: 5, // Default weight for source platform
+          verified: true // Mark as verified since we extracted it directly
         });
       }
       

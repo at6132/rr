@@ -121,7 +121,7 @@ class OpenAIService {
   async fetchPlatformRatings(
     productTitle: string, 
     platformNames: string[]
-  ): Promise<{ platform: string; rating: number; reviewCount: number; url: string }[]> {
+  ): Promise<{ platform: string; rating: number; reviewCount: number; url: string; weight: number; verified?: boolean }[]> {
     try {
       console.log(`Fetching real platform ratings for "${productTitle}" using websearch...`);
       
@@ -173,7 +173,13 @@ class OpenAIService {
       }
       
       try {
-        return JSON.parse(responseContent);
+        // Parse the response and add weight and verified properties
+        const ratings = JSON.parse(responseContent);
+        return ratings.map((rating) => ({
+          ...rating,
+          weight: 3, // Default weight for AI-fetched platform ratings (lower than direct extraction)
+          verified: false // Mark as not fully verified since we used AI to fetch them
+        }));
       } catch (parseError) {
         console.error("Error parsing platform ratings response:", parseError);
         return [];
