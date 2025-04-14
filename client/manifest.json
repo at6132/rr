@@ -9,7 +9,9 @@
       "16": "/assets/trans.icononly.png",
       "48": "/assets/trans.icononly.png",
       "128": "/assets/trans.icononly.png"
-    }
+    },
+    "default_width": 500,
+    "default_height": 600
   },
   "permissions": [
     "activeTab",
