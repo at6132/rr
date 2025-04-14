@@ -60,12 +60,8 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
-  server.listen({
-    port,
-    host: "127.0.0.1", // Using explicit IPv4 address for Windows compatibility
-    reusePort: true,
-    ipv6Only: false, // Disable IPv6
-  }, () => {
+  // Use the simplest form of server.listen for maximum compatibility
+  server.listen(port, () => {
     log(`serving on port ${port}`);
   });
 })();
