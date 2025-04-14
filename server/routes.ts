@@ -218,25 +218,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const axios = (await import('axios')).default;
         const { load } = await import('cheerio');
         
-        // Fetch the page with a realistic user agent
-        const response = await axios.get(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        // Function to attempt to fetch URL with multiple approaches
+        const attemptFetch = async (targetUrl) => {
+          // List of realistic user agents to try
+          const userAgents = [
+            // Chrome on Windows
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            // Firefox on Windows
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0',
+            // Safari on macOS
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+            // Edge on Windows
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0',
+            // Mobile Chrome on Android
+            'Mozilla/5.0 (Linux; Android 13; SM-S908B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36'
+          ];
+          
+          // Set standard headers for every request
+          const standardHeaders = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache',
-            'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
-            'Sec-Ch-Ua-Mobile': '?0',
-            'Sec-Ch-Ua-Platform': '"Windows"',
             'Sec-Fetch-Dest': 'document',
             'Sec-Fetch-Mode': 'navigate',
             'Sec-Fetch-Site': 'none',
             'Sec-Fetch-User': '?1',
             'Upgrade-Insecure-Requests': '1'
-          },
-          timeout: 10000
-        });
+          };
+          
+          // List of potential URL modifications to try (some sites use different paths for the same product)
+          const urlModifications = [
+            url => url, // Original URL
+            url => {
+              // Sometimes removing tracking parameters helps
+              const urlObj = new URL(url);
+              // Remove common tracking parameters
+              ['utm_source', 'utm_medium', 'utm_campaign', 'ref', 'ref_', 'fbclid', 'gclid', 'msclkid'].forEach(param => {
+                urlObj.searchParams.delete(param);
+              });
+              return urlObj.toString();
+            },
+            url => {
+              // For some sites, using mobile subdomain helps
+              const urlObj = new URL(url);
+              if (!urlObj.hostname.startsWith('m.')) {
+                urlObj.hostname = 'm.' + urlObj.hostname;
+              }
+              return urlObj.toString();
+            }
+          ];
+          
+          // Try different combinations of user agents and URL modifications
+          for (const userAgent of userAgents) {
+            for (const modifyUrl of urlModifications) {
+              try {
+                const modifiedUrl = modifyUrl(targetUrl);
+                console.log(`Attempting to fetch: ${modifiedUrl} with UA: ${userAgent.substring(0, 20)}...`);
+                
+                const headers = {
+                  ...standardHeaders,
+                  'User-Agent': userAgent
+                };
+                
+                // Add additional headers for specific sites
+                if (modifiedUrl.includes('target.com')) {
+                  // Target.com specific headers
+                  headers['DNT'] = '1';
+                  headers['Connection'] = 'keep-alive';
+                  headers['Cookie'] = '';  // Empty cookie to start fresh
+                } else if (modifiedUrl.includes('newegg.com')) {
+                  // Newegg specific headers
+                  headers['DNT'] = '1';
+                  headers['Connection'] = 'keep-alive';
+                }
+                
+                const response = await axios.default.get(modifiedUrl, {
+                  headers,
+                  timeout: 15000,
+                  maxRedirects: 5
+                });
+                
+                if (response.status === 200 && response.data) {
+                  return response;
+                }
+              } catch (error) {
+                console.log(`Attempt failed: ${error.message}`);
+                // Continue to the next attempt
+              }
+            }
+          }
+          
+          // If we reach here, all attempts failed
+          throw new Error('All fetch attempts failed');
+        };
+        
+        // Try to fetch the page using our enhanced approach
+        const response = await attemptFetch(url);
         
         const html = response.data;
         const $ = load(html);

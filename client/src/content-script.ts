@@ -331,33 +331,57 @@ const detectProduct = () => {
   // Track detection method for debugging
   let detectionMethod = '';
   let detectionSelector = '';
+  let detectionDetails = '';
 
   // First try our specialized site-specific detectors
   let title = null;
+  let imageUrl = null;
   let debugInfo = {};
   
   try {
-    // Try to extract product information from the page's structured data first (most reliable)
+    // Step 1: Try to extract product information from the page's structured data first (most reliable)
     log('Trying structured data detection');
     const structuredData = extractStructuredData();
     if (structuredData && structuredData.title) {
       title = structuredData.title;
+      imageUrl = structuredData.image || null;
       detectionMethod = 'structured_data';
+      detectionDetails = 'Product extracted from structured data using JSON-LD';
       log(`Found product in structured data: ${title}`);
     }
     
-    // If no structured data, try meta tags
+    // Step 2: If no structured data, try meta tags
     if (!title) {
       log('Trying meta tag detection');
       const metaTitle = extractFromMetaTags();
       if (metaTitle) {
         title = metaTitle;
         detectionMethod = 'meta_tags';
+        detectionDetails = 'Product extracted from meta tags in the page head';
         log(`Found product in meta tags: ${title}`);
+        
+        // Since we found the title in meta tags, let's also look for image in meta tags
+        if (!imageUrl) {
+          const metaImageSelectors = [
+            'meta[property="og:image"]',
+            'meta[property="og:image:secure_url"]',
+            'meta[name="twitter:image"]',
+            'meta[property="product:image"]',
+            'meta[itemprop="image"]'
+          ];
+          
+          for (const selector of metaImageSelectors) {
+            const metaElement = document.querySelector(selector);
+            if (metaElement && metaElement.getAttribute('content')) {
+              imageUrl = metaElement.getAttribute('content');
+              break;
+            }
+          }
+        }
       }
     }
     
-    // If still no title, try common selectors
+    // Step 3: If still no title, try common selectors
     if (!title) {
       log('Trying common selector detection');
       const result = extractFromCommonSelectors();
@@ -365,25 +389,79 @@ const detectProduct = () => {
         title = result.title;
         detectionMethod = 'common_selectors';
         detectionSelector = result.selector;
+        detectionDetails = `Product title found in DOM using selector: ${result.selector}`;
         log(`Found product using common selector ${result.selector}: ${title}`);
+        
+        // If we found title from a selector, look for nearby images
+        if (!imageUrl) {
+          try {
+            const element = document.querySelector(result.selector);
+            if (element) {
+              // Look for nearby images (parent containers, siblings, etc.)
+              const parent = element.parentElement;
+              if (parent) {
+                const nearbyImgs = parent.querySelectorAll('img');
+                if (nearbyImgs.length > 0) {
+                  // Find the largest nearby image
+                  let largestArea = 0;
+                  for (const img of Array.from(nearbyImgs)) {
+                    const area = img.naturalWidth * img.naturalHeight;
+                    if (area > largestArea && img.src) {
+                      largestArea = area;
+                      imageUrl = img.src;
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            log(`Error looking for related images: ${e}`);
+          }
+        }
       }
     }
     
-    // If still no title, try page title as last resort
+    // Step 4: If still no title, try page title as last resort
     if (!title) {
       log('Trying page title detection');
       const pageTitleResult = extractFromPageTitle();
       if (pageTitleResult) {
         title = pageTitleResult;
         detectionMethod = 'page_title';
+        detectionDetails = 'Product extracted from page title with cleaning';
         log(`Extracted product from page title: ${title}`);
+      }
+    }
+    
+    // Step 5: If we have a title but no image, try general image detection
+    if (title && !imageUrl) {
+      imageUrl = detectProductImage();
+    }
+    
+    // Step 6: Clean up and post-process the title
+    if (title) {
+      // Remove excessive whitespace
+      title = title.replace(/\s+/g, ' ').trim();
+      
+      // Remove common price patterns sometimes included in titles
+      title = title.replace(/\s*\$\d+(\.\d+)?\s*/g, ' ').trim();
+      title = title.replace(/\s*\(\d+% Off\)\s*/i, ' ').trim();
+      
+      // Remove SKU/model numbers if at the end of title
+      title = title.replace(/\s+#\w+$/i, '').trim();
+      title = title.replace(/\s+\(\w+\)$/i, '').trim();
+      
+      // Cut titles if they're too long (over 150 chars)
+      if (title.length > 150) {
+        title = title.substring(0, 150) + '...';
       }
     }
   } catch (error) {
     log(`Error during product detection: ${error}`);
+    detectionDetails = `Error: ${error.message}`;
   }
   
-  const imageUrl = detectProductImage();
+  // Get source name and current URL
   const source = detectSourceName();
   const url = window.location.href;
 
@@ -392,8 +470,10 @@ const detectProduct = () => {
     debugInfo = {
       method: detectionMethod,
       selector: detectionSelector,
-      details: `Detected on ${window.location.hostname} at ${new Date().toISOString()}`
+      details: detectionDetails || `Detected on ${window.location.hostname} at ${new Date().toISOString()}`
     };
+    
+    log(`Successfully detected product: "${title}" via ${detectionMethod}`);
     
     return {
       product: {
@@ -420,17 +500,32 @@ const extractStructuredData = () => {
       
       // Handle single product schema
       if (data['@type'] === 'Product' && data.name) {
+        log(`Found product in structured data with @type=Product: ${data.name}`);
         return {
           title: data.name,
           image: typeof data.image === 'string' ? data.image : 
                  Array.isArray(data.image) ? data.image[0] : null
         };
       }
+
+      // Handle breadcrumbList that might indicate product
+      if (data['@type'] === 'BreadcrumbList' && Array.isArray(data.itemListElement)) {
+        // Usually the last item in the breadcrumb is the product
+        const lastItem = data.itemListElement[data.itemListElement.length - 1];
+        if (lastItem && lastItem.item && lastItem.item.name) {
+          log(`Found product in breadcrumb: ${lastItem.item.name}`);
+          return {
+            title: lastItem.item.name,
+            image: null
+          };
+        }
+      }
       
       // Handle array of schemas
       if (Array.isArray(data['@graph'])) {
         for (const item of data['@graph']) {
           if (item['@type'] === 'Product' && item.name) {
+            log(`Found product in structured data @graph: ${item.name}`);
             return {
               title: item.name,
               image: typeof item.image === 'string' ? item.image : 
@@ -438,6 +533,16 @@ const extractStructuredData = () => {
             };
           }
         }
+      }
+      
+      // Handle variation in schema format - some sites don't use standard format
+      if (data.name && (data.offers || data.price || data.sku)) {
+        log(`Found product-like schema with name+offers/price: ${data.name}`);
+        return {
+          title: data.name,
+          image: typeof data.image === 'string' ? data.image : 
+                 Array.isArray(data.image) ? data.image[0] : null
+        };
       }
     } catch (e) {
       log(`Error parsing structured data: ${e}`);
