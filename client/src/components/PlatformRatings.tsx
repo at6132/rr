@@ -75,10 +75,24 @@ const PlatformRatings: React.FC<PlatformRatingsProps> = ({ ratings }) => {
             <div key={index} className="flex items-center justify-between border-b pb-2 last:border-0">
               <div className="flex items-center">
                 {getPlatformIcon(rating.platform)}
-                <span className="font-medium">{rating.platform}</span>
-                <span className="ml-2 text-xs text-muted-foreground">
-                  ({rating.reviewCount} reviews)
-                </span>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{rating.platform}</span>
+                    {rating.verified && (
+                      <Badge variant="outline" className="text-xs h-5 px-1">Verified</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {rating.reviewCount.toLocaleString()} {rating.reviewCount === 1 ? 'review' : 'reviews'}
+                    </span>
+                    {rating.weight > 1 && (
+                      <span className="text-xs text-muted-foreground">
+                        • Weight: {rating.weight}x
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
               {renderStars(rating.rating)}
             </div>

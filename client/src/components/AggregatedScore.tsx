@@ -57,7 +57,18 @@ const AggregatedScore: React.FC<AggregatedScoreProps> = ({ summary, aggregatedSc
           </Badge>
         </CardTitle>
         <CardDescription>
-          Based on {aggregatedScore ? aggregatedScore.totalReviewCount : summary.reviewCount} reviews across multiple platforms
+          {aggregatedScore ? (
+            <>
+              Based on {aggregatedScore.totalReviewCount.toLocaleString()} reviews
+              {aggregatedScore.confidenceScore && (
+                <span className="ml-1">
+                  • {Math.round(aggregatedScore.confidenceScore * 100)}% confidence
+                </span>
+              )}
+            </>
+          ) : (
+            `Based on ${summary.reviewCount.toLocaleString()} reviews`
+          )}
         </CardDescription>
       </CardHeader>
       
@@ -88,38 +99,6 @@ const AggregatedScore: React.FC<AggregatedScoreProps> = ({ summary, aggregatedSc
             <Progress value={summary.negativePercentage} className="w-3/4 h-2 bg-gray-200" />
           </div>
         </div>
-        
-        {/* Display platform breakdown if available */}
-        {aggregatedScore && aggregatedScore.platformBreakdown && aggregatedScore.platformBreakdown.length > 0 && (
-          <div className="mt-6">
-            <h4 className="text-sm font-medium mb-2">Platform Breakdown</h4>
-            <div className="space-y-2">
-              {aggregatedScore.platformBreakdown.map((platform, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{platform.platform}</span>
-                    {platform.verified && (
-                      <Badge variant="outline" className="text-xs px-1 py-0">Verified</Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center">
-                      {Array(Math.floor(platform.rating)).fill(0).map((_, i) => (
-                        <Star key={`p-${index}-s-${i}`} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      ))}
-                      {platform.rating % 1 >= 0.5 && (
-                        <StarHalf className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      ({platform.reviewCount})
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

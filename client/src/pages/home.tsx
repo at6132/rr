@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import Header from "../components/Header";
 import ProductInfo from "../components/ProductInfo";
 import AggregatedScore from "../components/AggregatedScore";
+import PlatformRatings from "../components/PlatformRatings";
 import AISummary from "../components/AISummary";
 import VideoReviews from "../components/VideoReviews";
 import RedditHighlights from "../components/RedditHighlights";
@@ -102,7 +103,15 @@ export default function Home() {
       <div className="flex-1 overflow-auto">
         {productAnalysis && (
           <>
-            <AggregatedScore summary={productAnalysis.summary} />
+            <AggregatedScore 
+              summary={productAnalysis.summary} 
+              aggregatedScore={productAnalysis.aggregatedScore} 
+            />
+            {productAnalysis.aggregatedScore?.platformBreakdown && 
+              productAnalysis.aggregatedScore.platformBreakdown.length > 0 && (
+                <PlatformRatings ratings={productAnalysis.aggregatedScore.platformBreakdown} />
+              )
+            }
             <AISummary 
               summary={productAnalysis.summary} 
               productTitle={productAnalysis.product.title} 

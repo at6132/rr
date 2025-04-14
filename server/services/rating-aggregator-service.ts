@@ -83,7 +83,10 @@ class RatingAggregatorService {
       let allRatings: PlatformRating[] = [];
       
       if (extractedRating && extractedRating.rating !== null) {
-        const reviewCount = extractedRating.reviewCount || 0;
+        // Ensure reviewCount is a number and never undefined
+        const reviewCount: number = typeof extractedRating.reviewCount === 'number' ? 
+          extractedRating.reviewCount : 0;
+          
         allRatings.push({
           platform: sourcePlatform,
           rating: extractedRating.rating,
