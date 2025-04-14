@@ -16,10 +16,11 @@ class ProductService {
       }
       
       // Fetch data from different sources in parallel
-      const [videos, redditPosts, blogReviews] = await Promise.all([
+      const [videos, redditPosts, blogReviews, aggregatedScore] = await Promise.all([
         youtubeService.getProductReviews(product.title),
         redditService.getProductDiscussions(product.title),
-        searchService.getExpertReviews(product.title)
+        searchService.getExpertReviews(product.title),
+        ratingAggregatorService.getAggregatedScore(product.title, product.url)
       ]);
       
       // Gather review texts for AI processing
@@ -52,6 +53,7 @@ class ProductService {
         videoReviews: videos,
         redditPosts: redditPosts,
         blogReviews: blogReviews,
+        aggregatedScore: aggregatedScore,
       };
       
       return productAnalysis;

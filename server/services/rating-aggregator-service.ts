@@ -83,10 +83,11 @@ class RatingAggregatorService {
       let allRatings: PlatformRating[] = [];
       
       if (extractedRating && extractedRating.rating !== null) {
+        const reviewCount = extractedRating.reviewCount || 0;
         allRatings.push({
           platform: sourcePlatform,
           rating: extractedRating.rating,
-          reviewCount: extractedRating.reviewCount || 0,
+          reviewCount: reviewCount,
           url: productUrl,
           weight: 5, // Default weight for source platform
           verified: true // Mark as verified since we extracted it directly

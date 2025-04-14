@@ -1,5 +1,5 @@
 import React from "react";
-import { Summary } from "../types";
+import { Summary, AggregatedScore as AggregatedScoreType } from "../types";
 import { Star, StarHalf } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 
 interface AggregatedScoreProps {
   summary: Summary;
+  aggregatedScore?: AggregatedScoreType;
 }
 
 const AggregatedScore: React.FC<AggregatedScoreProps> = ({ summary }) => {
