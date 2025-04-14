@@ -15,7 +15,18 @@ class SearchService {
 
   async getExpertReviews(productTitle: string): Promise<BlogReview[]> {
     try {
-      // Determine which API to use based on available keys
+      // First try to get reviews using OpenAI's websearch API for real data
+      try {
+        const blogReviews = await this.getOpenAIExpertReviews(productTitle);
+        if (blogReviews.length > 0) {
+          return blogReviews;
+        }
+      } catch (openaiError) {
+        console.error("Error using OpenAI websearch for expert reviews:", openaiError);
+        // Continue to fallback methods if OpenAI fails
+      }
+      
+      // Fall back to traditional search APIs if OpenAI doesn't return results
       if (this.googleApiKey && this.googleSearchEngineId) {
         return this.getGoogleExpertReviews(productTitle);
       } else if (this.bingApiKey) {
@@ -27,6 +38,29 @@ class SearchService {
       console.error("Error fetching expert reviews:", error);
       throw new Error(`Failed to fetch expert reviews: ${(error as Error).message}`);
     }
+  }
+  
+  private async getOpenAIExpertReviews(productTitle: string): Promise<BlogReview[]> {
+    // Use OpenAI's websearch to get real blog reviews with authentic data
+    const blogReviewResults = await openaiService.fetchBlogReviews(productTitle, 5);
+    
+    // Convert the blog review results to our BlogReview format
+    return blogReviewResults.map(review => {
+      // Normalize ratings to a 0-5 scale if provided
+      let normalizedRating = review.rating;
+      if (normalizedRating && normalizedRating > 5) {
+        normalizedRating = 5 * (normalizedRating / 10);
+      }
+      
+      return {
+        id: `blog-${Math.random().toString(36).substring(2, 11)}`,
+        source: review.source,
+        rating: normalizedRating,
+        snippet: review.snippet,
+        url: review.url,
+        logoText: this.getLogoText(review.source)
+      };
+    });
   }
 
   private async getGoogleExpertReviews(productTitle: string): Promise<BlogReview[]> {

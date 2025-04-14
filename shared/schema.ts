@@ -133,6 +133,28 @@ export const blogReviewSchema = z.object({
 
 export type BlogReview = z.infer<typeof blogReviewSchema>;
 
+// Platform Rating schema for aggregated scores across different platforms
+export const platformRatingSchema = z.object({
+  platform: z.string(),
+  rating: z.number(),
+  reviewCount: z.number(),
+  verified: z.boolean().optional(),
+  weight: z.number(), // Weight factor for this platform (1-10)
+  url: z.string().optional(),
+});
+
+export type PlatformRating = z.infer<typeof platformRatingSchema>;
+
+// Aggregated Score schema
+export const aggregatedScoreSchema = z.object({
+  overallScore: z.number(), // Normalized overall score (0-5)
+  totalReviewCount: z.number(), // Total number of reviews across all platforms
+  confidenceScore: z.number(), // How confident we are in this score (0-1)
+  platformBreakdown: z.array(platformRatingSchema), // Individual platform scores
+});
+
+export type AggregatedScore = z.infer<typeof aggregatedScoreSchema>;
+
 export const productAnalysisSchema = z.object({
   product: z.object({
     title: z.string(),
@@ -149,6 +171,7 @@ export const productAnalysisSchema = z.object({
     cons: z.array(z.string()),
     tags: z.array(z.string()),
   }),
+  aggregatedScore: aggregatedScoreSchema.optional(), // New field for our aggregated score
   videoReviews: z.array(videoReviewSchema),
   redditPosts: z.array(redditPostSchema),
   blogReviews: z.array(blogReviewSchema),

@@ -3,6 +3,7 @@ import { youtubeService } from "./youtube-service";
 import { redditService } from "./reddit-service";
 import { searchService } from "./search-service";
 import { openaiService } from "./openai-service";
+import { ratingAggregatorService } from "./rating-aggregator-service";
 
 class ProductService {
   async analyzeProduct(url?: string, productInfo?: any): Promise<ProductAnalysis> {
@@ -68,51 +69,140 @@ class ProductService {
   }> {
     // In a real implementation, this would make a request to the URL
     // and extract product details using DOM parsing or other methods
-    // For simplicity, we'll just parse the URL to get basic info
+    // For this implementation, we'll parse the URL to get basic info
     
     try {
       const parsedUrl = new URL(url);
-      const hostname = parsedUrl.hostname;
+      const hostname = parsedUrl.hostname.toLowerCase();
       let productTitle = "";
       let source = "";
+      let imageUrl: string | undefined = undefined;
       
       // Extract domain for source
       if (hostname.includes("amazon")) {
         source = "Amazon.com";
+        
         // For Amazon, try to extract ASIN from the URL
-        const asinMatch = url.match(/\/([A-Z0-9]{10})(?:\/|\?|$)/);
+        const asinMatch = url.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})(?:\/|\?|$)/);
         if (asinMatch && asinMatch[1]) {
-          productTitle = `Product ${asinMatch[1]}`;
+          const asin = asinMatch[1];
+          productTitle = `Amazon Product ${asin}`;
+          // We could also fetch product details using Amazon API here if we had access
+          imageUrl = `https://images-na.ssl-images-amazon.com/images/I/${asin}.jpg`;
         }
+        
+        // Try to extract product title from query parameters
+        const urlParams = new URLSearchParams(parsedUrl.search);
+        if (!productTitle && urlParams.has('title')) {
+          productTitle = urlParams.get('title') || productTitle;
+        }
+        
       } else if (hostname.includes("walmart")) {
         source = "Walmart.com";
+        
+        // For Walmart, try to extract product ID
+        const productIdMatch = url.match(/\/ip\/(?:.*?)\/(\d+)(?:\/|\?|$)/);
+        if (productIdMatch && productIdMatch[1]) {
+          productTitle = `Walmart Product ${productIdMatch[1]}`;
+        }
+        
       } else if (hostname.includes("bestbuy")) {
         source = "BestBuy.com";
+        
+        // For Best Buy, try to extract SKU
+        const skuMatch = url.match(/\/(?:.*?)\/(\d+)\.p(?:\/|\?|$)/);
+        if (skuMatch && skuMatch[1]) {
+          productTitle = `Best Buy Product ${skuMatch[1]}`;
+        }
+        
+      } else if (hostname.includes("target")) {
+        source = "Target.com";
+        
+        // For Target, try to extract product ID
+        const targetIdMatch = url.match(/\/p\/(?:.*?)-\/A-(\d+)(?:\/|\?|$)/);
+        if (targetIdMatch && targetIdMatch[1]) {
+          productTitle = `Target Product ${targetIdMatch[1]}`;
+        }
+        
+      } else if (hostname.includes("ebay")) {
+        source = "eBay.com";
+        
+        // For eBay, try to extract item ID
+        const itemIdMatch = url.match(/\/itm\/(?:.*?)\/(\d+)(?:\/|\?|$)/);
+        if (itemIdMatch && itemIdMatch[1]) {
+          productTitle = `eBay Item ${itemIdMatch[1]}`;
+        }
+        
+      } else if (hostname.includes("newegg")) {
+        source = "Newegg.com";
+        
+        // For Newegg, try to extract item ID
+        const itemIdMatch = url.match(/\/Product\/Product\.aspx\?Item=([A-Za-z0-9]+)(?:\/|\?|$)/);
+        if (itemIdMatch && itemIdMatch[1]) {
+          productTitle = `Newegg Item ${itemIdMatch[1]}`;
+        }
+        
+      } else if (hostname.includes("etsy")) {
+        source = "Etsy.com";
+        
+        // For Etsy, try to extract listing ID
+        const listingIdMatch = url.match(/\/listing\/(\d+)\/(?:.*?)(?:\/|\?|$)/);
+        if (listingIdMatch && listingIdMatch[1]) {
+          productTitle = `Etsy Listing ${listingIdMatch[1]}`;
+        }
+        
       } else {
         // Extract domain name for source
         const domainParts = hostname.split(".");
         if (domainParts[0] === "www") {
           domainParts.shift();
         }
-        source = domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1) + ".com";
+        
+        if (domainParts.length > 0) {
+          source = domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1) + ".com";
+        } else {
+          source = "Unknown Source";
+        }
       }
       
-      // If we couldn't extract a product title from the URL structure
+      // If we couldn't extract a product title from specific URL patterns
       if (!productTitle) {
-        // Get the last path segment which often contains the product name
-        const pathSegments = parsedUrl.pathname.split("/").filter(segment => segment.length > 0);
-        if (pathSegments.length > 0) {
-          productTitle = pathSegments[pathSegments.length - 1]
-            .replace(/-/g, " ")
-            .replace(/_/g, " ")
-            .split("?")[0]; // Remove query string if present
-            
-          // Capitalize first letter of each word
-          productTitle = productTitle
-            .split(" ")
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ");
-        } else {
+        // Try to extract it from query parameters first (common in many e-commerce sites)
+        const urlParams = new URLSearchParams(parsedUrl.search);
+        if (urlParams.has('title')) {
+          productTitle = urlParams.get('title') || "";
+        } else if (urlParams.has('product')) {
+          productTitle = urlParams.get('product') || "";
+        } else if (urlParams.has('name')) {
+          productTitle = urlParams.get('name') || "";
+        } else if (urlParams.has('q')) {
+          // If it's a search query, use it with qualifier
+          const query = urlParams.get('q') || "";
+          if (query.length > 0) {
+            productTitle = query;
+          }
+        }
+        
+        // If still no title, get the last path segment which often contains the product name
+        if (!productTitle) {
+          const pathSegments = parsedUrl.pathname.split("/").filter(segment => segment.length > 0);
+          if (pathSegments.length > 0) {
+            productTitle = pathSegments[pathSegments.length - 1]
+              .replace(/-/g, " ")
+              .replace(/_/g, " ")
+              .replace(/\..*$/, "") // Remove file extension if present
+              .split("?")[0]; // Remove query string if present
+              
+            // Capitalize first letter of each word
+            productTitle = productTitle
+              .split(" ")
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(" ");
+          }
+        }
+        
+        // If still no title, use a generic fallback
+        if (!productTitle) {
           productTitle = "Unknown Product";
         }
       }
@@ -121,6 +211,7 @@ class ProductService {
         title: productTitle,
         url: url,
         source: source,
+        imageUrl
       };
     } catch (error) {
       console.error("Error extracting product from URL:", error);
