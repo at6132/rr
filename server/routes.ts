@@ -188,6 +188,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Simple API test endpoint
+  app.get('/api/ping', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(200).json({ 
+      status: 'success',
+      message: 'API is working correctly',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0'
+    });
+  });
 
   return httpServer;
 }
