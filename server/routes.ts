@@ -214,19 +214,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Testing product detection for URL: ${url}`);
       
       try {
-        // Use axios to fetch the page content
-        const axios = await import('axios');
-        const cheerio = await import('cheerio');
+        // Import required packages
+        const axios = (await import('axios')).default;
+        const { load } = await import('cheerio');
         
-        const response = await axios.default.get(url, {
+        // Fetch the page with a realistic user agent
+        const response = await axios.get(url, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-          }
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"Windows"',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Upgrade-Insecure-Requests': '1'
+          },
+          timeout: 10000
         });
         
         const html = response.data;
-        const $ = cheerio.default.load(html);
+        const $ = load(html);
         
         // Extract product information using a simplified version of our content script strategies
         const extractFromStructuredData = () => {
