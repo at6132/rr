@@ -45,12 +45,29 @@ export interface BlogReview {
   logoText: string;
 }
 
+export interface PlatformRating {
+  platform: string;
+  rating: number;
+  reviewCount: number;
+  weight: number;
+  verified?: boolean;
+  url?: string;
+}
+
+export interface AggregatedScore {
+  overallScore: number;
+  totalReviewCount: number;
+  confidenceScore: number;
+  platformBreakdown: PlatformRating[];
+}
+
 export interface ProductAnalysis {
   product: Product;
   summary: Summary;
   videoReviews: VideoReview[];
   redditPosts: RedditPost[];
   blogReviews: BlogReview[];
+  aggregatedScore?: AggregatedScore;
 }
 
 export interface ChatMessage {

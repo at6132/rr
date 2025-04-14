@@ -1,15 +1,10 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star } from "lucide-react";
-import { SiAmazon, SiWalmart, SiTarget, SiEbay } from "react-icons/si";
+import { Star, StarHalf, CheckCircle2 } from "lucide-react";
+import { SiAmazon, SiWalmart, SiTarget, SiEbay, SiNewegg } from "react-icons/si";
 import { SiShopify } from "react-icons/si"; // Using Shopify icon as a fallback for Best Buy
-
-interface PlatformRating {
-  platform: string;
-  rating: number;
-  reviewCount: number;
-  url: string;
-}
+import { Badge } from "@/components/ui/badge";
+import { PlatformRating } from "../types";
 
 interface PlatformRatingsProps {
   ratings: PlatformRating[];
@@ -30,6 +25,8 @@ const PlatformRatings: React.FC<PlatformRatingsProps> = ({ ratings }) => {
       return <SiTarget className={iconClass} />;
     } else if (platform.toLowerCase().includes("ebay")) {
       return <SiEbay className={iconClass} />;
+    } else if (platform.toLowerCase().includes("newegg")) {
+      return <SiNewegg className={iconClass} />;
     }
     
     // Default icon if no match
@@ -39,13 +36,18 @@ const PlatformRatings: React.FC<PlatformRatingsProps> = ({ ratings }) => {
   // Function to render stars for a rating
   const renderStars = (rating: number) => {
     const fullStars = Math.floor(rating);
-    const emptyStars = 5 - fullStars;
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
     
     return (
       <div className="flex items-center">
         {Array(fullStars).fill(0).map((_, i) => (
           <Star key={`full-${i}`} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
         ))}
+        
+        {hasHalfStar && (
+          <StarHalf className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+        )}
         
         {Array(emptyStars).fill(0).map((_, i) => (
           <Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />
