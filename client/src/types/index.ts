@@ -62,6 +62,7 @@ export interface AggregatedScore {
 }
 
 export interface ProductAnalysis {
+  isProduct: boolean;
   product: Product;
   summary: Summary;
   videoReviews: VideoReview[];
