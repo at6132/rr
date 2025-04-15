@@ -35,8 +35,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
   } = useQuery({
     queryKey: ['/api/analyze', productUrl],
     queryFn: async () => {
-      if (!detectedProduct) {
-        throw new Error('No product detected');
+      if (!productUrl) {
+        throw new Error('No URL provided');
       }
       
       // Use apiRequest to ensure the proper API URL is used from config
@@ -51,7 +51,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       
       return await response.json();
     },
-    enabled: !!productUrl && !!detectedProduct,
+    enabled: !!productUrl, // Only need the URL, not necessarily a detected product
     gcTime: 1000 * 60 * 10, // Cache for 10 minutes
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
   });
@@ -74,6 +74,36 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       // Cast window.chrome to any to avoid TypeScript errors
       const chrome = (window as any).chrome;
       
+      // Get the current tab URL and analyze immediately when extension opens
+      const getCurrentTabAndAnalyze = async () => {
+        try {
+          // Query for the active tab in the current window
+          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          
+          if (tabs && tabs.length > 0 && tabs[0].url) {
+            const currentUrl = tabs[0].url;
+            console.log('Extension opened, automatically analyzing URL:', currentUrl);
+            
+            // Create a basic product object with just the URL
+            const basicProduct = {
+              title: "Product from " + new URL(currentUrl).hostname,
+              url: currentUrl,
+              source: new URL(currentUrl).hostname,
+            };
+            
+            // Set the detected product and URL
+            setDetectedProduct(basicProduct);
+            setProductUrl(currentUrl);
+          }
+        } catch (error) {
+          console.error('Error getting current tab:', error);
+        }
+      };
+      
+      // Run this immediately when the extension is opened
+      getCurrentTabAndAnalyze();
+      
+      // Also continue to listen for message-based product detection
       const listener = (message: any) => {
         if (message.type === 'PRODUCT_DETECTED') {
           setDetectedProduct(message.product);

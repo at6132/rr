@@ -76,6 +76,7 @@ class ComprehensiveAnalysisService {
       RESPONSE FORMAT:
       Return a JSON object with this exact structure and field names:
       {
+        "isProduct": boolean, // Set to false if this URL is not a product page
         "product": {
           "title": "Full Product Name",
           "source": "Website where product was found",
@@ -278,6 +279,7 @@ class ComprehensiveAnalysisService {
 
     // Build the final product analysis object
     return {
+      isProduct: raw.isProduct !== undefined ? raw.isProduct : true,
       product,
       summary: {
         positivePercentage: raw.summary?.positivePercentage || 0,

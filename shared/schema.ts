@@ -156,6 +156,7 @@ export const aggregatedScoreSchema = z.object({
 export type AggregatedScore = z.infer<typeof aggregatedScoreSchema>;
 
 export const productAnalysisSchema = z.object({
+  isProduct: z.boolean().default(true),
   product: z.object({
     title: z.string(),
     source: z.string(),

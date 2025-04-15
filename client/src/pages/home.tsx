@@ -90,6 +90,38 @@ export default function Home() {
       </div>
     );
   }
+  
+  // Check if the page was analyzed and is not a product
+  if (productAnalysis && productAnalysis.isProduct === false) {
+    return (
+      <div className="flex flex-col h-screen bg-deep-indigo text-soft-white">
+        <Header />
+        <div className="flex-1 p-4 flex flex-col items-center justify-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-12 w-12 text-warning-amber mb-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <h2 className="text-xl font-bold mb-2">Not a Product Page</h2>
+          <p className="text-center text-secondary-text mb-4">
+            This doesn't appear to be a product page. Please visit an e-commerce product page to use ReviewRadar.
+          </p>
+          <p className="text-center text-sm text-accent-purple mb-2">
+            URL analyzed: {productAnalysis.product.url}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Use detected product if analysis is not available yet
   const product = productAnalysis?.product || detectedProduct;
