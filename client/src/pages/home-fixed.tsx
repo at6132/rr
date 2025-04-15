@@ -19,6 +19,7 @@ export default function Home() {
     productUrl 
   } = useProduct();
 
+  // Render loading state
   if (isLoading) {
     return (
       <div className="flex flex-col h-screen bg-deep-indigo text-soft-white">
@@ -62,6 +63,7 @@ export default function Home() {
     );
   }
 
+  // Show error message for failed requests
   if (isError) {
     return (
       <div className="flex flex-col h-screen bg-deep-indigo text-soft-white">
@@ -96,6 +98,7 @@ export default function Home() {
     );
   }
 
+  // Show "no product detected" message
   if (!productAnalysis && !detectedProduct) {
     return (
       <div className="flex flex-col h-screen bg-deep-indigo text-soft-white">
@@ -127,6 +130,7 @@ export default function Home() {
   // Use detected product if analysis is not available yet
   const product = productAnalysis?.product || detectedProduct;
 
+  // Show the product analysis UI
   return (
     <div className="flex flex-col min-h-screen bg-deep-indigo text-soft-white w-[400px]">
       <Header />
@@ -134,7 +138,7 @@ export default function Home() {
       {product && <ProductInfo product={product} />}
       
       <div className="flex-1 overflow-auto">
-        {productAnalysis && (
+        {productAnalysis && productAnalysis.isProduct && (
           <>
             <AggregatedScore 
               summary={productAnalysis.summary} 

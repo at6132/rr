@@ -39,21 +39,48 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         throw new Error('No URL provided');
       }
       
-      // Use apiRequest to ensure the proper API URL is used from config
-      const response = await apiRequest(
-        'POST',
-        '/api/analyze',
-        {
-          url: productUrl,
-          productInfo: detectedProduct,
-        }
-      );
-      
-      return await response.json();
+      try {
+        // Use apiRequest to ensure the proper API URL is used from config
+        const response = await apiRequest(
+          'POST',
+          '/api/analyze',
+          {
+            url: productUrl,
+            productInfo: detectedProduct,
+          }
+        );
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error analyzing URL:', error);
+        // Return a valid product analysis with isProduct = false to avoid errors
+        return {
+          isProduct: false,
+          product: {
+            title: "Error analyzing page",
+            source: new URL(productUrl).hostname,
+            url: productUrl,
+          },
+          summary: {
+            positivePercentage: 0,
+            neutralPercentage: 0,
+            negativePercentage: 0,
+            reviewCount: 0,
+            pros: [],
+            cons: [],
+            tags: []
+          },
+          videoReviews: [],
+          redditPosts: [],
+          blogReviews: [],
+          aggregatedScore: null
+        };
+      }
     },
     enabled: !!productUrl, // Only need the URL, not necessarily a detected product
     gcTime: 1000 * 60 * 10, // Cache for 10 minutes
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+    retry: false, // Don't retry failures
   });
 
   const refreshAnalysis = () => {
