@@ -44,7 +44,7 @@ class ComprehensiveAnalysisService {
          - Reddit discussions
          - Ratings from MULTIPLE e-commerce platforms (this is VERY important)
       
-      3. IMPORTANT - For the aggregated score section, make sure to include ratings from:
+      3. IMPORTANT - For the aggregated score section, provide ONLY individual platform ratings from:
          - Amazon star ratings
          - BestBuy user reviews
          - Walmart reviews
@@ -52,7 +52,8 @@ class ComprehensiveAnalysisService {
          - Newegg reviews
          - And any other relevant e-commerce sites
          
-         These should all be represented individually in the platformBreakdown array AND reflected in the overall aggregatedScore
+         These should all be represented individually in the platformBreakdown array with their ACCURATE rating and reviewCount. 
+         Do NOT worry about calculating the overall score - we will calculate that ourselves based on your platform ratings!
       
       4. Compile your findings into a comprehensive product analysis with:
          - Accurate product information
@@ -220,24 +221,57 @@ class ComprehensiveAnalysisService {
       logoText: b.logoText || b.source?.substring(0, 2).toUpperCase() || "UK"
     }));
 
-    // Transform aggregated score to match our schema
+    // Extract platform ratings and calculate aggregated score ourselves
     let aggregatedScore;
-    if (raw.aggregatedScore) {
-      // Get platform ratings with correct structure
-      const platformBreakdown = (raw.aggregatedScore.platformBreakdown || 
-                                raw.aggregatedScore.platformRatings || []).map((p: any) => ({
-        platform: p.platform || "Unknown Platform",
-        rating: p.rating || 0,
-        reviewCount: p.reviewCount || 0,
-        weight: p.weight || 1,
-        url: p.url,
-        verified: p.verified !== undefined ? p.verified : false
-      }));
+    
+    // Get platform ratings with correct structure
+    const platformBreakdown = (raw.aggregatedScore?.platformBreakdown || 
+                              raw.aggregatedScore?.platformRatings || []).map((p: any) => ({
+      platform: p.platform || "Unknown Platform",
+      rating: p.rating || 0,
+      reviewCount: p.reviewCount || 0,
+      weight: p.weight || 1,
+      url: p.url,
+      verified: p.verified !== undefined ? p.verified : false
+    }));
+
+    // Calculate weighted average score if we have platform ratings
+    if (platformBreakdown.length > 0) {
+      let totalWeightedScore = 0;
+      let totalWeight = 0;
+      let totalReviews = 0;
+
+      // Calculate weighted score based on number of reviews
+      platformBreakdown.forEach((platform: {
+        platform: string;
+        rating: number;
+        reviewCount: number;
+        weight: number;
+        url?: string;
+        verified?: boolean;
+      }) => {
+        // Skip platforms with 0 ratings to avoid skewing the score
+        if (platform.rating > 0 && platform.reviewCount > 0) {
+          // Use reviewCount as weight for more accurate representation
+          const weight = platform.reviewCount;
+          totalWeightedScore += platform.rating * weight;
+          totalWeight += weight;
+          totalReviews += platform.reviewCount;
+        }
+      });
+
+      // Calculate confidence based on number of platforms and total reviews
+      const confidenceScore = Math.min(
+        0.95, 
+        (platformBreakdown.length / 5) * 0.5 + 
+        Math.min(1, Math.log10(totalReviews + 1) / 4) * 0.5
+      );
 
       aggregatedScore = {
-        overallScore: raw.aggregatedScore.overallScore || 0,
-        totalReviewCount: raw.aggregatedScore.totalReviewCount || raw.aggregatedScore.reviewCount || 0,
-        confidenceScore: raw.aggregatedScore.confidenceScore || 0.5,
+        // Calculate final weighted average (or use 0 if no valid platforms)
+        overallScore: totalWeight > 0 ? totalWeightedScore / totalWeight : 0,
+        totalReviewCount: totalReviews,
+        confidenceScore: confidenceScore,
         platformBreakdown
       };
     }
