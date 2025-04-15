@@ -1,86 +1,32 @@
-import { ProductAnalysis, videoReviewSchema, redditPostSchema, blogReviewSchema } from "@shared/schema";
-import { youtubeService } from "./youtube-service";
-import { redditService } from "./reddit-service";
-import { searchService } from "./search-service";
-import { openaiService } from "./openai-service";
-import { ratingAggregatorService } from "./rating-aggregator-service";
+import { ProductAnalysis } from "@shared/schema";
+import { comprehensiveAnalysisService } from "./comprehensive-analysis-service";
 
 class ProductService {
+  /**
+   * Analyzes a product URL or detected product and returns comprehensive review data
+   * 
+   * This implementation uses the ComprehensiveAnalysisService which leverages OpenAI's
+   * web browsing capabilities to extract data directly from the product URL
+   * 
+   * @param url The product URL to analyze
+   * @param productInfo Optional product info already detected from the client side
+   * @returns A complete ProductAnalysis object
+   */
   async analyzeProduct(url?: string, productInfo?: any): Promise<ProductAnalysis> {
     try {
-      // Extract product details from URL or provided info
-      const product = productInfo || await this.extractProductFromUrl(url || "");
-      
-      if (!product || !product.title) {
-        throw new Error("Could not detect product information");
+      // Validate that we have a URL to analyze
+      if (!url && (!productInfo || !productInfo.url)) {
+        throw new Error("A valid product URL is required for analysis");
       }
       
-      // Fetch data from different sources in parallel with error handling
-      let videos = [];
-      let redditPosts = [];
-      let blogReviews = [];
-      let aggregatedScore = null;
+      // Use the product URL from productInfo if the url parameter is not provided
+      const productUrl = url || productInfo.url;
       
-      try {
-        // Use allSettled to prevent one API failure from causing the entire analysis to fail
-        const results = await Promise.allSettled([
-          youtubeService.getProductReviews(product.title),
-          redditService.getProductDiscussions(product.title),
-          searchService.getExpertReviews(product.title),
-          ratingAggregatorService.getAggregatedScore(product.title, product.url)
-        ]);
-        
-        // Process each result individually
-        if (results[0].status === 'fulfilled') videos = results[0].value;
-        if (results[1].status === 'fulfilled') redditPosts = results[1].value;
-        if (results[2].status === 'fulfilled') blogReviews = results[2].value;
-        if (results[3].status === 'fulfilled') aggregatedScore = results[3].value;
-        
-        // Log any errors
-        results.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            const sources = ['YouTube', 'Reddit', 'Blog Search', 'Aggregated Score'];
-            console.error(`Error fetching data from ${sources[index]}:`, result.reason);
-          }
-        });
-      } catch (error) {
-        console.error("Error in parallel data fetching:", error);
-      }
+      console.log(`Analyzing product at URL: ${productUrl}`);
+      console.log(`Product info from detection:`, productInfo);
       
-      // Gather review texts for AI processing
-      const reviewTexts = [
-        ...blogReviews.map(review => review.snippet),
-        ...redditPosts.map(post => post.summary),
-        // We don't have text transcripts of videos, so we can't include them
-      ];
-      
-      // Generate AI summary
-      const summary = await openaiService.summarizeReviews(product.title, reviewTexts);
-      
-      // Create final product analysis
-      const productAnalysis: ProductAnalysis = {
-        product: {
-          title: product.title,
-          source: product.source,
-          url: product.url,
-          imageUrl: product.imageUrl,
-        },
-        summary: {
-          positivePercentage: summary.positivePercentage,
-          neutralPercentage: summary.neutralPercentage,
-          negativePercentage: summary.negativePercentage,
-          reviewCount: reviewTexts.length,
-          pros: summary.pros,
-          cons: summary.cons,
-          tags: summary.tags,
-        },
-        videoReviews: videos,
-        redditPosts: redditPosts,
-        blogReviews: blogReviews,
-        aggregatedScore: aggregatedScore,
-      };
-      
-      return productAnalysis;
+      // Use the comprehensive analysis service to get all product data at once
+      return await comprehensiveAnalysisService.analyzeProductUrl(productUrl, productInfo);
     } catch (error) {
       console.error("Error analyzing product:", error);
       throw new Error(`Failed to analyze product: ${(error as Error).message}`);
