@@ -36,9 +36,13 @@ class ComprehensiveAnalysisService {
 
       TASK: Analyze the product: ${productContext ? productContext : `at URL: ${productUrl}`}
       
+      IMPORTANT: Pay careful attention to the URL pattern. URLs containing /dp/, /product/, /p/, /skuId/, or similar patterns are almost always product pages. 
+      For instance, Amazon URLs with "/dp/" are DEFINITELY product pages (like https://www.amazon.com/product-name/dp/XXXXXXXX/).
+      
       INSTRUCTIONS:
-      1. Use your knowledge to provide information about this product
-      2. Generate realistic information about reviews, ratings, and discussions about this product from multiple sources:
+      1. FIRST determine if this is a product page. If the URL matches any well-known e-commerce product URL pattern (especially Amazon /dp/ URLs), it IS a product page.
+      2. Use your knowledge to FIND real information about this product
+      3. FIND (not generate) real information about reviews, ratings, and discussions about this product from multiple sources:
          - Professional review sites and blogs
          - YouTube review videos
          - Reddit discussions
@@ -66,12 +70,13 @@ class ComprehensiveAnalysisService {
          - Ratings across different platforms (with real data)
       
       CRITICAL REQUIREMENTS:
-      - All data MUST be real and verifiable, not fictional or estimated
+      - NEVER generate or make up data! All data MUST be real and verifiable information that you can find on the web
       - The platformBreakdown section MUST include REAL ratings from MULTIPLE e-commerce sites (Amazon, BestBuy, etc.)
-      - If you can't find real data for a section, include an empty array [] or null value
-      - All URLs must be real and accessible
+      - If you can't find real data for a section, include an empty array [] or null value instead of making up data
+      - All URLs must be real and accessible, not fabricated
       - Only return the JSON object - no explanations or other text
       - Ensure all data conforms to the exact schema provided
+      - When analyzing Amazon URLs with /dp/ paths, they are ALWAYS product pages
 
       RESPONSE FORMAT:
       Return a JSON object with this exact structure and field names:

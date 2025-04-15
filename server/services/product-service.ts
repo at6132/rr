@@ -24,12 +24,86 @@ class ProductService {
       
       console.log(`Analyzing product at URL: ${productUrl}`);
       console.log(`Product info from detection:`, productInfo);
+
+      // Pre-check if this is almost certainly a product URL based on known patterns
+      // This will help ensure OpenAI correctly identifies product pages
+      if (productUrl) {
+        const isLikelyProductUrl = this.isLikelyProductUrl(productUrl);
+        if (isLikelyProductUrl) {
+          console.log(`URL matches known product pattern: ${productUrl}`);
+          // If we detect a product URL pattern, we can enhance the product info
+          if (!productInfo) {
+            productInfo = {
+              url: productUrl,
+              title: "Product from " + new URL(productUrl).hostname,
+              source: new URL(productUrl).hostname.replace("www.", ""),
+            };
+          }
+        }
+      }
       
       // Use the comprehensive analysis service to get all product data at once
       return await comprehensiveAnalysisService.analyzeProductUrl(productUrl, productInfo);
     } catch (error) {
       console.error("Error analyzing product:", error);
       throw new Error(`Failed to analyze product: ${(error as Error).message}`);
+    }
+  }
+  
+  /**
+   * Checks if a URL matches known product URL patterns
+   * This helps with pre-identifying product pages before sending to OpenAI
+   */
+  private isLikelyProductUrl(url: string): boolean {
+    try {
+      const urlObj = new URL(url);
+      const path = urlObj.pathname;
+      const hostname = urlObj.hostname;
+
+      // Amazon product pattern
+      if (hostname.includes('amazon.') && (
+        path.includes('/dp/') || 
+        path.includes('/gp/product/') || 
+        path.includes('/product/')
+      )) {
+        return true;
+      }
+
+      // Best Buy product pattern
+      if (hostname.includes('bestbuy.') && path.includes('/site/') && path.includes('/p')) {
+        return true;
+      }
+
+      // Walmart product pattern
+      if (hostname.includes('walmart.') && path.includes('/ip/')) {
+        return true;
+      }
+      
+      // Target product pattern
+      if (hostname.includes('target.') && path.includes('/p/')) {
+        return true;
+      }
+
+      // Newegg product pattern
+      if (hostname.includes('newegg.') && path.includes('/p/')) {
+        return true;
+      }
+
+      // General product patterns
+      if (
+        path.match(/\/p\/[a-zA-Z0-9-]+\/?$/) || // /p/product-id
+        path.match(/\/product\/[a-zA-Z0-9-]+\/?$/) || // /product/product-id
+        path.match(/\/item\/[a-zA-Z0-9-]+\/?$/) || // /item/item-id
+        path.includes('/skuId=') ||
+        path.includes('/productId=')
+      ) {
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Error checking if URL is a product URL:", error);
+      return false;
     }
   }
 
