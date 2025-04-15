@@ -54,6 +54,29 @@ export default function Home() {
           <p className="text-center text-secondary-text mb-4">
             This doesn't appear to be a product page. Please visit an e-commerce product page to use ReviewRadar.
           </p>
+          
+          {/* Check if this might be a product URL by pattern */}
+          {productUrl && (
+            productUrl.includes('/dp/') || 
+            productUrl.includes('/product/') || 
+            productUrl.includes('/p/') || 
+            productUrl.includes('/skuId=')
+          ) ? (
+            <div className="mt-2 mb-4 p-3 bg-accent-purple bg-opacity-20 rounded-lg max-w-md">
+              <p className="text-center text-warning-amber font-medium mb-2">
+                This URL looks like a product page! Try refreshing to analyze again.
+              </p>
+              <button 
+                onClick={() => {
+                  window.location.reload();
+                }}
+                className="w-full py-2 bg-teal-glow hover:bg-teal-glow/80 text-white font-semibold rounded-md transition-colors"
+              >
+                Refresh Analysis
+              </button>
+            </div>
+          ) : null}
+          
           <p className="text-center text-sm text-accent-purple mb-2">
             URL analyzed: {productUrl || productAnalysis.product.url}
           </p>

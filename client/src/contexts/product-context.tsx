@@ -27,6 +27,60 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
 
   // Use the imported config and apiRequest from the top
   
+  // Helper function to check if a URL matches known product URL patterns
+  const isLikelyProductUrl = (url: string): boolean => {
+    try {
+      const urlObj = new URL(url);
+      const path = urlObj.pathname;
+      const hostname = urlObj.hostname;
+
+      // Amazon product pattern
+      if (hostname.includes('amazon.') && (
+        path.includes('/dp/') || 
+        path.includes('/gp/product/') || 
+        path.includes('/product/')
+      )) {
+        return true;
+      }
+
+      // Best Buy product pattern
+      if (hostname.includes('bestbuy.') && path.includes('/site/') && path.includes('/p')) {
+        return true;
+      }
+
+      // Walmart product pattern
+      if (hostname.includes('walmart.') && path.includes('/ip/')) {
+        return true;
+      }
+      
+      // Target product pattern
+      if (hostname.includes('target.') && path.includes('/p/')) {
+        return true;
+      }
+
+      // Newegg product pattern
+      if (hostname.includes('newegg.') && path.includes('/p/')) {
+        return true;
+      }
+
+      // General product patterns
+      if (
+        path.match(/\/p\/[a-zA-Z0-9-]+\/?$/) || // /p/product-id
+        path.match(/\/product\/[a-zA-Z0-9-]+\/?$/) || // /product/product-id
+        path.match(/\/item\/[a-zA-Z0-9-]+\/?$/) || // /item/item-id
+        path.includes('/skuId=') ||
+        path.includes('/productId=')
+      ) {
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Error checking if URL is a product URL:", error);
+      return false;
+    }
+  };
+  
   const {
     data: productAnalysis,
     isLoading,
@@ -40,6 +94,10 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       }
       
       try {
+        // Check if the URL is likely a product page based on pattern matching
+        const urlLikelyProduct = isLikelyProductUrl(productUrl);
+        console.log(`URL pattern check: ${productUrl} - Likely product: ${urlLikelyProduct}`);
+        
         // Use apiRequest to ensure the proper API URL is used from config
         const response = await apiRequest(
           'POST',
@@ -50,7 +108,49 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
           }
         );
         
-        return await response.json();
+        const data = await response.json();
+        
+        // Double-check: If our client-side pattern matching says it's a product but API says no,
+        // we'll trust our pattern matching for known e-commerce URLs
+        if (!data.isProduct && urlLikelyProduct) {
+          console.log('API says not a product, but URL pattern suggests it is. Overriding.');
+          data.isProduct = true;
+          
+          // If product title looks generic ("Product from amazon.com"), try to extract better title
+          if (data.product.title.startsWith("Product from") && productUrl) {
+            // Extract a descriptive title from the URL if possible
+            try {
+              const urlObj = new URL(productUrl);
+              const path = urlObj.pathname;
+              const segments = path.split('/').filter(segment => segment.length > 0);
+              
+              // For Amazon, we can extract a better title from the URL path
+              if (urlObj.hostname.includes('amazon')) {
+                // Find segments that aren't 'dp' or product IDs (alphanumeric)
+                const titleSegments = segments.filter(segment => 
+                  !['dp', 'gp', 'product'].includes(segment) && 
+                  !segment.match(/^[A-Z0-9]{10}$/)
+                );
+                
+                if (titleSegments.length > 0) {
+                  const extractedTitle = titleSegments[0]
+                    .replace(/-/g, ' ')
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ');
+                  
+                  if (extractedTitle.length > 5) {
+                    data.product.title = extractedTitle;
+                  }
+                }
+              }
+            } catch (e) {
+              console.error('Error improving generic title:', e);
+            }
+          }
+        }
+        
+        return data;
       } catch (error) {
         console.error('Error analyzing URL:', error);
         // Return a valid product analysis with isProduct = false to avoid errors
