@@ -42,9 +42,19 @@ class ComprehensiveAnalysisService {
          - Professional review sites and blogs
          - YouTube review videos
          - Reddit discussions
-         - Other retail sites that may sell this product
+         - Ratings from MULTIPLE e-commerce platforms (this is VERY important)
       
-      3. Compile your findings into a comprehensive product analysis with:
+      3. IMPORTANT - For the aggregated score section, make sure to include ratings from:
+         - Amazon star ratings
+         - BestBuy user reviews
+         - Walmart reviews
+         - Target reviews
+         - Newegg reviews
+         - And any other relevant e-commerce sites
+         
+         These should all be represented individually in the platformBreakdown array AND reflected in the overall aggregatedScore
+      
+      4. Compile your findings into a comprehensive product analysis with:
          - Accurate product information
          - A summary of review sentiments 
          - Pros and cons mentioned by reviewers
@@ -56,6 +66,7 @@ class ComprehensiveAnalysisService {
       
       CRITICAL REQUIREMENTS:
       - All data MUST be real and verifiable, not fictional or estimated
+      - The platformBreakdown section MUST include REAL ratings from MULTIPLE e-commerce sites (Amazon, BestBuy, etc.)
       - If you can't find real data for a section, include an empty array [] or null value
       - All URLs must be real and accessible
       - Only return the JSON object - no explanations or other text
